@@ -11,7 +11,7 @@
 
 <meta name="author" content="Greg Fitzgerald" />
 
-<meta name="date" content="2025-12-23" />
+<meta name="date" content="2025-12-24" />
 
 <title>Consolidated R Markdown Notebook</title>
 
@@ -1569,7 +1569,7 @@ border-radius: 0px;
 
 <h1 class="title toc-ignore">Consolidated R Markdown Notebook</h1>
 <h4 class="author">Greg Fitzgerald</h4>
-<h4 class="date">2025-12-23</h4>
+<h4 class="date">2025-12-24</h4>
 
 </div>
 
@@ -1989,84 +1989,201 @@ if (length(results_list) &gt; 0) {
 <div id="rodent-domains" class="section level2">
 <h2>Rodent domains</h2>
 <p>Note: spatial memory is ~43% of outcomes so interpretation is
-limited</p>
+limited. Domains with k &lt; 3 articles are excluded per
+preregistration.</p>
 <pre class="r"><code>if (&quot;Cognitive_Domain&quot; %in% names(rodent_data)) {
-  rodent_dom &lt;- rodent_data %&gt;%
+  # Filter to cognitive domains (exclude Motor Performance)
+  rodent_dom_all &lt;- rodent_data %&gt;%
     filter(!is.na(Cognitive_Domain) &amp; Cognitive_Domain != &quot;&quot; &amp;
            Cognitive_Domain != &quot;Motor Performance&quot;)
 
-  cat(&quot;Domain distribution:\n&quot;)
-  print(rodent_dom %&gt;% group_by(Cognitive_Domain) %&gt;%
-        summarise(k = n_distinct(Study_Arm_ID), n = n()) %&gt;% arrange(desc(n)))
+  # Domain distribution by Article_ID (k = articles, not studies)
+  domain_dist_r &lt;- rodent_dom_all %&gt;%
+    group_by(Cognitive_Domain) %&gt;%
+    summarise(k_articles = n_distinct(Article_ID), n_effects = n()) %&gt;%
+    arrange(desc(n_effects))
 
-  VCV_r_dom &lt;- impute_covariance_matrix(
-    vi = rodent_dom$sampling_variance,
-    cluster = rodent_dom$Study_Arm_ID, r = 0.7
-  )
+  cat(&quot;Domain distribution (k = articles):\n&quot;)
+  print(domain_dist_r)
 
+  # Filter to domains with k &gt;= 3 articles
+  valid_domains_r &lt;- domain_dist_r %&gt;%
+    filter(k_articles &gt;= 3) %&gt;%
+    pull(Cognitive_Domain)
+
+  rodent_dom &lt;- rodent_dom_all %&gt;%
+    filter(Cognitive_Domain %in% valid_domains_r)
+
+  cat(&quot;\nDomains included (k &gt;= 3):&quot;, length(valid_domains_r), &quot;\n&quot;)
+  cat(&quot;Effect sizes after filtering:&quot;, nrow(rodent_dom), &quot;\n\n&quot;)
+
+  # Fit model WITH intercept for omnibus F-test (first domain = reference)
   h3_r &lt;- rma.mv(
-    yi = Hedges_g, V = VCV_r_dom,
-    mods = ~ Cognitive_Domain,
-    random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+    yi = Hedges_g,
+    V = sampling_variance,
+    mods = ~ Cognitive_Domain,  # With intercept for QM-based F-test
+    random = ~ 1 | Article_ID,
     data = rodent_dom,
     method = &quot;REML&quot;, test = &quot;t&quot;, dfs = &quot;contain&quot;
   )
 
-  anova_r &lt;- anova(h3_r, btt = 2:length(coef(h3_r)))
-  cat(&quot;\nOmnibus F =&quot;, round(anova_r$QM / (length(coef(h3_r)) - 1), 2),
-      &quot;, p =&quot;, format.pval(anova_r$QMp, digits = 4), &quot;\n&quot;)
+  # Apply robust variance estimation clustered at article level
+  h3_r_robust &lt;- robust(h3_r, cluster = rodent_dom$Article_ID, clubSandwich = TRUE)
+
+  # Omnibus F-test using QM (per dissertation methodology)
+  cat(&quot;=== Omnibus F-test (QM-based) ===\n&quot;)
+  n_domains &lt;- length(valid_domains_r)
+  df_num &lt;- n_domains - 1
+  df_denom &lt;- nrow(rodent_dom) - n_domains
+  F_stat &lt;- h3_r$QM / df_num
+  cat(&quot;F(&quot;, df_num, &quot;, &quot;, df_denom, &quot;) = &quot;, round(F_stat, 2),
+      &quot;, p = &quot;, format.pval(h3_r$QMp, digits = 3), &quot;\n\n&quot;, sep = &quot;&quot;)
+
+  # Fit intercept-free model for domain-specific estimates
+  h3_r_noint &lt;- rma.mv(
+    yi = Hedges_g,
+    V = sampling_variance,
+    mods = ~ Cognitive_Domain - 1,  # No intercept: each domain gets own estimate
+    random = ~ 1 | Article_ID,
+    data = rodent_dom,
+    method = &quot;REML&quot;, test = &quot;t&quot;, dfs = &quot;contain&quot;
+  )
+  h3_r_noint_robust &lt;- robust(h3_r_noint, cluster = rodent_dom$Article_ID, clubSandwich = TRUE)
+
+  cat(&quot;=== Domain-Specific Effects (Robust) ===\n&quot;)
+  coef_r &lt;- coef_test(h3_r_noint, vcov = &quot;CR2&quot;, cluster = rodent_dom$Article_ID)
+  results_r &lt;- data.frame(
+    Domain = gsub(&quot;Cognitive_Domain&quot;, &quot;&quot;, rownames(coef_r)),
+    g = round(coef_r[, &quot;beta&quot;], 3),
+    SE = round(coef_r[, &quot;SE&quot;], 3),
+    p = round(coef_r[, &quot;p_Satt&quot;], 4)
+  ) %&gt;%
+    left_join(domain_dist_r %&gt;% rename(Domain = Cognitive_Domain), by = &quot;Domain&quot;) %&gt;%
+    arrange(desc(g))
+  print(results_r)
 }</code></pre>
-<pre><code>## Domain distribution:
+<pre><code>## Domain distribution (k = articles):
 ## # A tibble: 5 × 3
-##   Cognitive_Domain                    k     n
-##   &lt;chr&gt;                           &lt;int&gt; &lt;int&gt;
-## 1 Learning &amp; Memory (Spatial)        31    66
-## 2 Learning &amp; Memory (Recognition)    25    40
-## 3 Fear/Associative Learning          16    31
-## 4 Working Memory                     13    13
-## 5 Executive Function/Attention        5     5
+##   Cognitive_Domain                k_articles n_effects
+##   &lt;chr&gt;                                &lt;int&gt;     &lt;int&gt;
+## 1 Learning &amp; Memory (Spatial)             22        66
+## 2 Learning &amp; Memory (Recognition)         19        40
+## 3 Fear/Associative Learning               11        31
+## 4 Working Memory                          10        13
+## 5 Executive Function/Attention             3         5
 ## 
-## Omnibus F = 0.47 , p = 0.1219</code></pre>
+## Domains included (k &gt;= 3): 5 
+## Effect sizes after filtering: 155 
+## 
+## === Omnibus F-test (QM-based) ===
+## F(4, 150) = 0.28, p = 0.35
+## 
+## === Domain-Specific Effects (Robust) ===
+##                            Domain     g    SE      p k_articles n_effects
+## 1     Learning &amp; Memory (Spatial) 0.625 0.109 0.0000         22        66
+## 2                  Working Memory 0.613 0.255 0.0396         10        13
+## 3    Executive Function/Attention 0.489 0.229 0.1733          3         5
+## 4 Learning &amp; Memory (Recognition) 0.367 0.210 0.0985         19        40
+## 5       Fear/Associative Learning 0.342 0.290 0.2645         11        31</code></pre>
 </div>
 <div id="human-domains" class="section level2">
 <h2>Human domains</h2>
+<p>Global Cognition excluded (k = 1 article, below k &gt;= 3
+threshold).</p>
 <pre class="r"><code>if (&quot;Cognitive_Domain&quot; %in% names(human_data)) {
-  human_dom &lt;- human_data %&gt;%
+  # Filter to valid cognitive domains
+  human_dom_all &lt;- human_data %&gt;%
     filter(!is.na(Cognitive_Domain) &amp; Cognitive_Domain != &quot;&quot;)
 
-  cat(&quot;Domain distribution:\n&quot;)
-  print(human_dom %&gt;% group_by(Cognitive_Domain) %&gt;%
-        summarise(k = n_distinct(Study_Arm_ID), n = n()) %&gt;% arrange(desc(n)))
+  # Domain distribution by Article_ID
+  domain_dist_h &lt;- human_dom_all %&gt;%
+    group_by(Cognitive_Domain) %&gt;%
+    summarise(k_articles = n_distinct(Article_ID), n_effects = n()) %&gt;%
+    arrange(desc(n_effects))
 
-  VCV_h_dom &lt;- impute_covariance_matrix(
-    vi = human_dom$sampling_variance,
-    cluster = human_dom$Study_Arm_ID, r = 0.7
-  )
+  cat(&quot;Domain distribution (k = articles):\n&quot;)
+  print(domain_dist_h)
 
+  # Filter to domains with k &gt;= 3 articles (excludes Global Cognition with k=1)
+  valid_domains_h &lt;- domain_dist_h %&gt;%
+    filter(k_articles &gt;= 3) %&gt;%
+    pull(Cognitive_Domain)
+
+  human_dom &lt;- human_dom_all %&gt;%
+    filter(Cognitive_Domain %in% valid_domains_h)
+
+  cat(&quot;\nDomains included (k &gt;= 3):&quot;, length(valid_domains_h), &quot;\n&quot;)
+  cat(&quot;Effect sizes after filtering:&quot;, nrow(human_dom), &quot;\n\n&quot;)
+
+  # Fit model WITH intercept for omnibus F-test (first domain = reference)
   h3_h &lt;- rma.mv(
-    yi = Hedges_g, V = VCV_h_dom,
-    mods = ~ Cognitive_Domain,
-    random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+    yi = Hedges_g,
+    V = sampling_variance,
+    mods = ~ Cognitive_Domain,  # With intercept for QM-based F-test
+    random = ~ 1 | Article_ID,
     data = human_dom,
     method = &quot;REML&quot;, test = &quot;t&quot;, dfs = &quot;contain&quot;
   )
 
-  anova_h &lt;- anova(h3_h, btt = 2:length(coef(h3_h)))
-  cat(&quot;\nOmnibus F =&quot;, round(anova_h$QM / (length(coef(h3_h)) - 1), 2),
-      &quot;, p =&quot;, format.pval(anova_h$QMp, digits = 4), &quot;\n&quot;)
+  # Apply robust variance estimation clustered at article level
+  h3_h_robust &lt;- robust(h3_h, cluster = human_dom$Article_ID, clubSandwich = TRUE)
+
+  # Omnibus F-test using QM (per dissertation methodology)
+  cat(&quot;=== Omnibus F-test (QM-based) ===\n&quot;)
+  n_domains_h &lt;- length(valid_domains_h)
+  df_num_h &lt;- n_domains_h - 1
+  df_denom_h &lt;- nrow(human_dom) - n_domains_h
+  F_stat_h &lt;- h3_h$QM / df_num_h
+  cat(&quot;F(&quot;, df_num_h, &quot;, &quot;, df_denom_h, &quot;) = &quot;, round(F_stat_h, 2),
+      &quot;, p = &quot;, format.pval(h3_h$QMp, digits = 3), &quot;\n\n&quot;, sep = &quot;&quot;)
+
+  # Fit intercept-free model for domain-specific estimates
+  h3_h_noint &lt;- rma.mv(
+    yi = Hedges_g,
+    V = sampling_variance,
+    mods = ~ Cognitive_Domain - 1,  # No intercept: each domain gets own estimate
+    random = ~ 1 | Article_ID,
+    data = human_dom,
+    method = &quot;REML&quot;, test = &quot;t&quot;, dfs = &quot;contain&quot;
+  )
+  h3_h_noint_robust &lt;- robust(h3_h_noint, cluster = human_dom$Article_ID, clubSandwich = TRUE)
+
+  cat(&quot;=== Domain-Specific Effects (Robust) ===\n&quot;)
+  coef_h &lt;- coef_test(h3_h_noint, vcov = &quot;CR2&quot;, cluster = human_dom$Article_ID)
+  results_h &lt;- data.frame(
+    Domain = gsub(&quot;Cognitive_Domain&quot;, &quot;&quot;, rownames(coef_h)),
+    g = round(coef_h[, &quot;beta&quot;], 3),
+    SE = round(coef_h[, &quot;SE&quot;], 3),
+    p = round(coef_h[, &quot;p_Satt&quot;], 4)
+  ) %&gt;%
+    left_join(domain_dist_h %&gt;% rename(Domain = Cognitive_Domain), by = &quot;Domain&quot;) %&gt;%
+    arrange(desc(g))
+  print(results_h)
 }</code></pre>
-<pre><code>## Domain distribution:
+<pre><code>## Domain distribution (k = articles):
 ## # A tibble: 6 × 3
-##   Cognitive_Domain                    k     n
-##   &lt;chr&gt;                           &lt;int&gt; &lt;int&gt;
-## 1 Executive Function/Attention       43   188
-## 2 Working Memory                     27    67
-## 3 Learning &amp; Memory (Recognition)    18    43
-## 4 Processing Speed                   16    18
-## 5 Learning &amp; Memory (Spatial)         4     6
-## 6 Global Cognition                    1     1
+##   Cognitive_Domain                k_articles n_effects
+##   &lt;chr&gt;                                &lt;int&gt;     &lt;int&gt;
+## 1 Executive Function/Attention            31       188
+## 2 Working Memory                          18        67
+## 3 Learning &amp; Memory (Recognition)         13        43
+## 4 Processing Speed                        12        18
+## 5 Learning &amp; Memory (Spatial)              3         6
+## 6 Global Cognition                         1         1
 ## 
-## Omnibus F = 0.21 , p = 0.3851</code></pre>
+## Domains included (k &gt;= 3): 5 
+## Effect sizes after filtering: 322 
+## 
+## === Omnibus F-test (QM-based) ===
+## F(4, 317) = 0.41, p = 0.166
+## 
+## === Domain-Specific Effects (Robust) ===
+##                            Domain     g    SE      p k_articles n_effects
+## 1     Learning &amp; Memory (Spatial) 0.330 0.180 0.2678          3         6
+## 2 Learning &amp; Memory (Recognition) 0.267 0.059 0.0010         13        43
+## 3    Executive Function/Attention 0.169 0.027 0.0000         31       188
+## 4                Processing Speed 0.162 0.108 0.1797         12        18
+## 5                  Working Memory 0.147 0.031 0.0002         18        67</code></pre>
 </div>
 </div>
 <div id="h4-variability-lncvr" class="section level1">
