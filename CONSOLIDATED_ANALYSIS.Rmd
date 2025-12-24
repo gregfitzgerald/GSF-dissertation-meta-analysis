@@ -1,0 +1,641 @@
+---
+title: "Consolidated R Markdown Notebook"
+author: "Greg Fitzgerald"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6
+)
+set.seed(20241112)  # date I started consolidating these
+```
+
+# Notes
+
+Consolidated from separate analysis scripts. Runs all hypothesis tests from
+preprocessed RDS files.
+
+Input data (preprocessed with VIF correction and multiarm adjustment):
+
+- data/processed/rodent_main.rds (k=71 studies, n=155 effect sizes)
+- data/processed/human_main.rds (k=50 studies, n=323 effect sizes)
+- data/processed/VCV_rodent.rds (155 x 155 VCV matrix)
+- data/processed/VCV_human.rds (323 x 323 VCV matrix)
+
+Original CSVs also included for reference:
+
+- data/rodent_data_CLEANED_VIF_CORRECTED.csv
+- data/human_data_CLEANED_VIF_CORRECTED.csv
+
+```{r packages}
+# metafor: Viechtbauer (2010). J Stat Softw 36(3).
+library(metafor)
+library(clubSandwich)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(tibble)
+```
+
+# Load and prep data
+
+```{r load-data}
+# Use preprocessed RDS files for exact reproducibility
+# These were created by the original analysis pipeline with r=0.7 for VCV
+rodent_data <- readRDS("data/processed/rodent_main.rds")
+human_data <- readRDS("data/processed/human_main.rds")
+VCV_rodent <- readRDS("data/processed/VCV_rodent.rds")
+VCV_human <- readRDS("data/processed/VCV_human.rds")
+
+cat("Data loaded:\n")
+cat("  Rodent: k =", length(unique(rodent_data$Study_Arm_ID)),
+    ", n =", nrow(rodent_data), "\n")
+cat("  Human: k =", length(unique(human_data$Study_Arm_ID)),
+    ", n =", nrow(human_data), "\n")
+
+# Also load raw CSVs for CVR analysis (needs raw means/SDs)
+rodent_raw <- read.csv("data/rodent_data_CLEANED_VIF_CORRECTED.csv",
+                       stringsAsFactors = FALSE)
+human_raw <- read.csv("data/human_data_CLEANED_VIF_CORRECTED.csv",
+                      stringsAsFactors = FALSE)
+```
+
+# H1: Dose-Response
+
+## Overall effects
+
+```{r h1-overall}
+# H1-R-Overall
+h1_r_overall <- rma.mv(
+  yi = Hedges_g, V = VCV_rodent,
+  random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+  data = rodent_data,
+  method = "REML", test = "t", dfs = "contain"
+)
+h1_r_overall_rve <- robust(h1_r_overall, cluster = rodent_data$Article_ID)
+
+cat("RODENT OVERALL\n")
+cat("g =", round(coef(h1_r_overall_rve)[1], 3),
+    "95% CI [", round(h1_r_overall_rve$ci.lb, 3), ",",
+    round(h1_r_overall_rve$ci.ub, 3), "]\n")
+cat("p =", format.pval(h1_r_overall_rve$pval, digits = 4), "\n\n")
+
+# heterogeneity; I2 formula from Higgins & Thompson (2002)
+typical_v <- median(rodent_data$sampling_variance, na.rm = TRUE)
+I2_r <- (sum(h1_r_overall$sigma2) / (sum(h1_r_overall$sigma2) + typical_v)) * 100
+cat("I2 =", round(I2_r, 1), "%\n")
+
+rodent_g <- coef(h1_r_overall_rve)[1]
+
+# H1-H-Overall
+h1_h_overall <- rma.mv(
+  yi = Hedges_g, V = VCV_human,
+  random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+  data = human_data,
+  method = "REML", test = "t", dfs = "contain"
+)
+h1_h_overall_rve <- robust(h1_h_overall, cluster = human_data$Article_ID)
+
+cat("\nHUMAN OVERALL\n")
+cat("g =", round(coef(h1_h_overall_rve)[1], 3),
+    "95% CI [", round(h1_h_overall_rve$ci.lb, 3), ",",
+    round(h1_h_overall_rve$ci.ub, 3), "]\n")
+cat("p =", format.pval(h1_h_overall_rve$pval, digits = 4), "\n")
+
+typical_v_h <- median(human_data$sampling_variance, na.rm = TRUE)
+I2_h <- (sum(h1_h_overall$sigma2) / (sum(h1_h_overall$sigma2) + typical_v_h)) * 100
+cat("I2 =", round(I2_h, 1), "%\n")
+
+human_g <- coef(h1_h_overall_rve)[1]
+
+# ratio
+ratio <- rodent_g / human_g
+cat("\nRatio:", round(ratio, 2), "x\n")
+```
+
+## RLS dose-response (rodent)
+
+```{r h1-r-dose}
+cat("RLS_Differential range:", range(rodent_data$RLS_Differential, na.rm = TRUE), "\n\n")
+
+h1_r_dose <- rma.mv(
+  yi = Hedges_g, V = VCV_rodent,
+  mods = ~ RLS_Differential,
+  random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+  data = rodent_data,
+  method = "REML", test = "t", dfs = "contain"
+)
+h1_r_dose_rve <- robust(h1_r_dose, cluster = rodent_data$Article_ID)
+
+cat("RLS slope: beta =", round(coef(h1_r_dose_rve)[2], 4), "\n")
+cat("95% CI [", round(h1_r_dose_rve$ci.lb[2], 4), ",",
+    round(h1_r_dose_rve$ci.ub[2], 4), "]\n")
+cat("p =", format.pval(h1_r_dose_rve$pval[2], digits = 4), "\n")
+```
+
+## Total hours dose-response (human)
+
+```{r h1-h-dose}
+if ("Total_Hours" %in% names(human_data)) {
+  cat("Total_Hours range:", range(human_data$Total_Hours, na.rm = TRUE), "\n\n")
+
+  # log transform (right-skewed distribution)
+  human_data$log_Total_Hours <- log(human_data$Total_Hours + 0.1)
+
+  h1_h_dose <- rma.mv(
+    yi = Hedges_g, V = VCV_human,
+    mods = ~ log_Total_Hours,
+    random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+    data = human_data,
+    method = "REML", test = "t", dfs = "contain"
+  )
+  h1_h_dose_rve <- robust(h1_h_dose, cluster = human_data$Article_ID)
+
+  cat("Log-hours slope: beta =", round(coef(h1_h_dose_rve)[2], 4), "\n")
+  cat("95% CI [", round(h1_h_dose_rve$ci.lb[2], 4), ",",
+      round(h1_h_dose_rve$ci.ub[2], 4), "]\n")
+  cat("p =", format.pval(h1_h_dose_rve$pval[2], digits = 4), "\n")
+} else {
+  cat("Total_Hours not found in data\n")
+}
+```
+
+## Species x Dose interaction
+
+This is the key test: does the dose-response slope differ between species? (Using z-standardized dose measures to make slopes comparable.)
+
+```{r h1-cs-interaction}
+# prep rodent with z-scored dose
+rodent_combined <- rodent_data %>%
+  mutate(
+    Species = "Rodent",
+    Dose_Z = scale(RLS_Differential)[,1],
+    Study_ID_Comb = paste0("R_", Study_Arm_ID),
+    Article_ID_Comb = paste0("R_", Article_ID),
+    Test_ID_Comb = paste0("R_", Test_ID),
+    Outcome_ID_Comb = paste0("R_", Outcome_ID)
+  ) %>%
+  select(Species, Dose_Z, Hedges_g, sampling_variance,
+         Study_ID_Comb, Article_ID_Comb, Test_ID_Comb, Outcome_ID_Comb)
+
+# prep human
+human_combined <- human_data %>%
+  mutate(
+    Species = "Human",
+    Dose_Z = scale(Total_Hours)[,1],
+    Study_ID_Comb = paste0("H_", Study_Arm_ID),
+    Article_ID_Comb = paste0("H_", Article_ID),
+    Test_ID_Comb = paste0("H_", Test_ID),
+    Outcome_ID_Comb = paste0("H_", Outcome_ID)
+  ) %>%
+  select(Species, Dose_Z, Hedges_g, sampling_variance,
+         Study_ID_Comb, Article_ID_Comb, Test_ID_Comb, Outcome_ID_Comb)
+
+combined <- bind_rows(rodent_combined, human_combined) %>%
+  filter(!is.na(Dose_Z) & !is.na(Hedges_g))
+
+combined$Species <- factor(combined$Species, levels = c("Human", "Rodent"))
+
+VCV_combined <- impute_covariance_matrix(
+  vi = combined$sampling_variance,
+  cluster = combined$Study_ID_Comb,
+  r = 0.7
+)
+
+h1_cs <- rma.mv(
+  yi = Hedges_g, V = VCV_combined,
+  mods = ~ Species * Dose_Z,
+  random = ~ 1 | Study_ID_Comb/Test_ID_Comb/Outcome_ID_Comb,
+  data = combined,
+  method = "REML", test = "t", dfs = "contain"
+)
+h1_cs_rve <- robust(h1_cs, cluster = combined$Article_ID_Comb)
+
+cat("SPECIES x DOSE INTERACTION\n")
+cat("Intercept (Human):", round(coef(h1_cs_rve)[1], 3), "\n")
+cat("Species main effect:", round(coef(h1_cs_rve)[2], 3),
+    "p =", format.pval(h1_cs_rve$pval[2], digits = 3), "\n")
+cat("Dose (Human slope):", round(coef(h1_cs_rve)[3], 3),
+    "p =", format.pval(h1_cs_rve$pval[3], digits = 3), "\n")
+cat("\n** Interaction: beta =", round(coef(h1_cs_rve)[4], 3),
+    "95% CI [", round(h1_cs_rve$ci.lb[4], 3), ",", round(h1_cs_rve$ci.ub[4], 3), "]",
+    "p =", format.pval(h1_cs_rve$pval[4], digits = 4), "\n")
+
+# simple slopes
+cat("\nSimple slopes:\n")
+cat("  Human:", round(coef(h1_cs_rve)[3], 3), "\n")
+cat("  Rodent:", round(coef(h1_cs_rve)[3] + coef(h1_cs_rve)[4], 3), "\n")
+```
+
+## Baseline moderation (H1-R-Baseline)
+
+Does baseline resource level moderate the enrichment effect?
+
+```{r h1-r-baseline}
+# baseline = control condition RLS score
+h1_r_baseline <- rma.mv(
+  yi = Hedges_g, V = VCV_rodent,
+  mods = ~ RLS_Score_Control,
+  random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+  data = rodent_data,
+  method = "REML", test = "t", dfs = "contain"
+)
+h1_r_baseline_rve <- robust(h1_r_baseline, cluster = rodent_data$Article_ID)
+
+cat("H1-R-Baseline\n")
+cat("beta =", round(coef(h1_r_baseline_rve)[2], 3),
+    "95% CI [", round(h1_r_baseline_rve$ci.lb[2], 3), ",",
+    round(h1_r_baseline_rve$ci.ub[2], 3), "]",
+    "p =", format.pval(h1_r_baseline_rve$pval[2], digits = 3), "\n")
+```
+
+## Sex x Dose interaction (H1-R-SexXDose)
+
+Does sex moderate the dose-response relationship?
+
+```{r h1-r-sexdose}
+# filter to single-sex studies only (exclude "Both")
+rodent_singlesex <- rodent_data %>%
+  filter(Sex %in% c("Male", "Female"))
+
+cat("Single-sex studies: k =", length(unique(rodent_singlesex$Study_Arm_ID)), "\n")
+cat("Male:", sum(rodent_singlesex$Sex == "Male"),
+    ", Female:", sum(rodent_singlesex$Sex == "Female"), "\n\n")
+
+# Rebuild VCV for filtered data
+VCV_rodent_sex <- impute_covariance_matrix(
+  vi = rodent_singlesex$sampling_variance,
+  cluster = rodent_singlesex$Study_Arm_ID,
+  r = 0.7
+)
+
+h1_r_sexdose <- rma.mv(
+  yi = Hedges_g, V = VCV_rodent_sex,
+  mods = ~ Sex * RLS_Differential,
+  random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+  data = rodent_singlesex,
+  method = "REML", test = "t", dfs = "contain"
+)
+h1_r_sexdose_rve <- robust(h1_r_sexdose, cluster = rodent_singlesex$Article_ID)
+
+cat("H1-R-SexXDose\n")
+cat("Sex (Male vs Female):", round(coef(h1_r_sexdose_rve)[2], 3),
+    "p =", format.pval(h1_r_sexdose_rve$pval[2], digits = 3), "\n")
+cat("RLS_Differential:", round(coef(h1_r_sexdose_rve)[3], 3),
+    "p =", format.pval(h1_r_sexdose_rve$pval[3], digits = 3), "\n")
+cat("Sex:RLS_Differential interaction:", round(coef(h1_r_sexdose_rve)[4], 3), "\n")
+cat("  95% CI [", round(h1_r_sexdose_rve$ci.lb[4], 3), ",",
+    round(h1_r_sexdose_rve$ci.ub[4], 3), "]",
+    "p =", format.pval(h1_r_sexdose_rve$pval[4], digits = 3), "\n")
+```
+
+## Subspecies x Dose interaction (H1-R-SubspeciesXDose)
+
+Does subspecies (rat vs mouse) moderate the dose-response relationship?
+
+```{r h1-r-subspeciesdose}
+cat("Rat studies: k =", length(unique(filter(rodent_data, Species == "Rat")$Study_Arm_ID)), "\n")
+cat("Mouse studies: k =", length(unique(filter(rodent_data, Species == "Mouse")$Study_Arm_ID)), "\n\n")
+
+h1_r_subspecies <- rma.mv(
+  yi = Hedges_g, V = VCV_rodent,
+  mods = ~ Species * RLS_Differential,
+  random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+  data = rodent_data,
+  method = "REML", test = "t", dfs = "contain"
+)
+h1_r_subspecies_rve <- robust(h1_r_subspecies, cluster = rodent_data$Article_ID)
+
+cat("H1-R-SubspeciesXDose\n")
+cat("Species (Rat vs Mouse):", round(coef(h1_r_subspecies_rve)[2], 3),
+    "p =", format.pval(h1_r_subspecies_rve$pval[2], digits = 3), "\n")
+cat("RLS_Differential:", round(coef(h1_r_subspecies_rve)[3], 3),
+    "p =", format.pval(h1_r_subspecies_rve$pval[3], digits = 3), "\n")
+cat("Species:RLS_Differential interaction:", round(coef(h1_r_subspecies_rve)[4], 3), "\n")
+cat("  95% CI [", round(h1_r_subspecies_rve$ci.lb[4], 3), ",",
+    round(h1_r_subspecies_rve$ci.ub[4], 3), "]",
+    "p =", format.pval(h1_r_subspecies_rve$pval[4], digits = 3), "\n")
+```
+
+# H2: Components
+
+## RLS components (rodent)
+
+Testing each component as a moderator. Following Cait et al. (2022) approach.
+
+```{r h2-components}
+# these are the binary indicators in the data
+rls_vars <- c("Social_Partners", "Exercise_Wheels", "Additional_Space",
+              "Shelters", "Nesting_Material", "Gnawing_Materials",
+              "Environmental_Complexity", "Foraging_Opportunities")
+
+available <- rls_vars[rls_vars %in% names(rodent_data)]
+cat("Testing", length(available), "components\n\n")
+
+results_list <- list()
+
+for (v in available) {
+  n1 <- sum(rodent_data[[v]] == 1, na.rm = TRUE)
+  n0 <- sum(rodent_data[[v]] == 0, na.rm = TRUE)
+
+  # need enough in both groups
+  if (n1 >= 10 && n0 >= 10) {
+    mod <- tryCatch({
+      rma.mv(yi = Hedges_g, V = VCV_rodent,
+             mods = as.formula(paste("~", v)),
+             random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+             data = rodent_data, method = "REML", test = "t", dfs = "contain")
+    }, error = function(e) NULL)
+
+    if (!is.null(mod)) {
+      mod_rve <- robust(mod, cluster = rodent_data$Article_ID)
+      results_list[[v]] <- data.frame(
+        component = v,
+        beta = coef(mod_rve)[2],
+        se = mod_rve$se[2],
+        ci_lb = mod_rve$ci.lb[2],
+        ci_ub = mod_rve$ci.ub[2],
+        p = mod_rve$pval[2],
+        n_present = n1,
+        n_absent = n0
+      )
+    }
+  }
+}
+
+if (length(results_list) > 0) {
+  comp_table <- do.call(rbind, results_list)
+  comp_table$p_holm <- p.adjust(comp_table$p, method = "holm")
+  print(knitr::kable(comp_table, digits = 4, row.names = FALSE))
+}
+```
+
+## Intervention type (human)
+
+```{r h2-type}
+if ("Intervention_Type" %in% names(human_data)) {
+  cat("Distribution:\n")
+  print(table(human_data$Intervention_Type))
+
+  h2_type <- rma.mv(
+    yi = Hedges_g, V = VCV_human,
+    mods = ~ Intervention_Type,
+    random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+    data = human_data,
+    method = "REML", test = "t", dfs = "contain"
+  )
+  h2_type_rve <- robust(h2_type, cluster = human_data$Article_ID)
+
+  # omnibus F
+  anova_res <- anova(h2_type, btt = 2:length(coef(h2_type)))
+  cat("\nOmnibus F =", round(anova_res$QM / (length(coef(h2_type)) - 1), 2),
+      ", p =", format.pval(anova_res$QMp, digits = 4), "\n")
+}
+```
+
+# H3: Cognitive domains
+
+## Rodent domains
+
+Note: spatial memory is ~43% of outcomes so interpretation is limited
+
+```{r h3-rodent}
+if ("Cognitive_Domain" %in% names(rodent_data)) {
+  rodent_dom <- rodent_data %>%
+    filter(!is.na(Cognitive_Domain) & Cognitive_Domain != "" &
+           Cognitive_Domain != "Motor Performance")
+
+  cat("Domain distribution:\n")
+  print(rodent_dom %>% group_by(Cognitive_Domain) %>%
+        summarise(k = n_distinct(Study_Arm_ID), n = n()) %>% arrange(desc(n)))
+
+  VCV_r_dom <- impute_covariance_matrix(
+    vi = rodent_dom$sampling_variance,
+    cluster = rodent_dom$Study_Arm_ID, r = 0.7
+  )
+
+  h3_r <- rma.mv(
+    yi = Hedges_g, V = VCV_r_dom,
+    mods = ~ Cognitive_Domain,
+    random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+    data = rodent_dom,
+    method = "REML", test = "t", dfs = "contain"
+  )
+
+  anova_r <- anova(h3_r, btt = 2:length(coef(h3_r)))
+  cat("\nOmnibus F =", round(anova_r$QM / (length(coef(h3_r)) - 1), 2),
+      ", p =", format.pval(anova_r$QMp, digits = 4), "\n")
+}
+```
+
+## Human domains
+
+```{r h3-human}
+if ("Cognitive_Domain" %in% names(human_data)) {
+  human_dom <- human_data %>%
+    filter(!is.na(Cognitive_Domain) & Cognitive_Domain != "")
+
+  cat("Domain distribution:\n")
+  print(human_dom %>% group_by(Cognitive_Domain) %>%
+        summarise(k = n_distinct(Study_Arm_ID), n = n()) %>% arrange(desc(n)))
+
+  VCV_h_dom <- impute_covariance_matrix(
+    vi = human_dom$sampling_variance,
+    cluster = human_dom$Study_Arm_ID, r = 0.7
+  )
+
+  h3_h <- rma.mv(
+    yi = Hedges_g, V = VCV_h_dom,
+    mods = ~ Cognitive_Domain,
+    random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+    data = human_dom,
+    method = "REML", test = "t", dfs = "contain"
+  )
+
+  anova_h <- anova(h3_h, btt = 2:length(coef(h3_h)))
+  cat("\nOmnibus F =", round(anova_h$QM / (length(coef(h3_h)) - 1), 2),
+      ", p =", format.pval(anova_h$QMp, digits = 4), "\n")
+}
+```
+
+# H4: Variability (lnCVR)
+
+Using log coefficient of variation ratio (lnCVR); see Senior et al. (2020) for methodology.
+
+```{r h4-calc}
+# rodent CVR from raw CSV (needs actual means/SDs)
+# filter to main analysis sample (exclude Zhang2017 etc.)
+rodent_main_cvr <- rodent_raw %>%
+  filter(is.na(exclude_main_analysis) | exclude_main_analysis == FALSE | exclude_main_analysis == 0)
+
+rodent_cvr_dat <- rodent_main_cvr %>%
+  rename(Mean_Control = Control_Group_Mean, Mean_Intervention = Intervention_Group_Mean,
+         SD_Control = Control_Group_Variance_Value, SD_Intervention = Intervention_Group_Variance_Value,
+         N_Control = Control_N, N_Intervention = Intervention_N) %>%
+  filter(!is.na(Mean_Control) & !is.na(Mean_Intervention) &
+         !is.na(SD_Control) & !is.na(SD_Intervention) &
+         Mean_Control != 0 & Mean_Intervention != 0)
+
+r_cvr <- escalc(measure = "CVR", m1i = Mean_Intervention, m2i = Mean_Control,
+                sd1i = SD_Intervention, sd2i = SD_Control,
+                n1i = N_Intervention, n2i = N_Control, data = rodent_cvr_dat)
+
+rodent_cvr <- rodent_cvr_dat %>%
+  mutate(lnCVR = r_cvr$yi, vi_cvr = r_cvr$vi) %>%
+  filter(!is.na(lnCVR) & is.finite(lnCVR) & is.finite(vi_cvr))
+
+cat("Rodent CVR: k =", n_distinct(rodent_cvr$Study_Arm_ID),
+    ", n =", nrow(rodent_cvr), "\n")
+
+# human CVR
+human_cvr_dat <- human_raw %>%
+  rename(Mean_Control = POST_TEST_Control_Group_Mean,
+         Mean_Intervention = POST_TEST_Intervention_Group_Mean,
+         SD_Control = POST_TEST_Control_Group_Variance_Value,
+         SD_Intervention = POST_TEST_Intervention_Group_Variance_Value,
+         N_Control = Control_N, N_Intervention = Intervention_N) %>%
+  mutate(across(c(Mean_Control, Mean_Intervention, SD_Control, SD_Intervention,
+                  N_Control, N_Intervention), as.numeric)) %>%
+  filter(!is.na(Mean_Control) & !is.na(Mean_Intervention) &
+         !is.na(SD_Control) & !is.na(SD_Intervention) &
+         Mean_Control != 0 & Mean_Intervention != 0 &
+         SD_Control > 0 & SD_Intervention > 0)
+
+h_cvr <- escalc(measure = "CVR", m1i = Mean_Intervention, m2i = Mean_Control,
+                sd1i = SD_Intervention, sd2i = SD_Control,
+                n1i = N_Intervention, n2i = N_Control, data = human_cvr_dat)
+
+human_cvr <- human_cvr_dat %>%
+  mutate(lnCVR = h_cvr$yi, vi_cvr = h_cvr$vi) %>%
+  filter(!is.na(lnCVR) & is.finite(lnCVR) & is.finite(vi_cvr))
+
+cat("Human CVR: k =", n_distinct(human_cvr$Study_Arm_ID),
+    ", n =", nrow(human_cvr), "\n")
+```
+
+```{r h4-models}
+# rodent
+VCV_r_cvr <- impute_covariance_matrix(vi = rodent_cvr$vi_cvr,
+                                       cluster = rodent_cvr$Study_Arm_ID, r = 0.7)
+h4_r <- rma.mv(yi = lnCVR, V = VCV_r_cvr,
+               random = ~ 1 | Study_Arm_ID/Test_Name/Outcome_ID,
+               data = rodent_cvr, method = "REML", test = "t", dfs = "contain")
+h4_r_rve <- robust(h4_r, cluster = rodent_cvr$Article_ID)
+
+cat("\nRODENT lnCVR:", round(coef(h4_r_rve), 4),
+    "[", round(h4_r_rve$ci.lb, 4), ",", round(h4_r_rve$ci.ub, 4), "]",
+    "p =", format.pval(h4_r_rve$pval, digits = 4), "\n")
+
+# human
+VCV_h_cvr <- impute_covariance_matrix(vi = human_cvr$vi_cvr,
+                                       cluster = human_cvr$Study_Arm_ID, r = 0.7)
+h4_h <- rma.mv(yi = lnCVR, V = VCV_h_cvr,
+               random = ~ 1 | Study_Arm_ID/Test_Name/Outcome_ID,
+               data = human_cvr, method = "REML", test = "t", dfs = "contain")
+h4_h_rve <- robust(h4_h, cluster = human_cvr$Article_ID)
+
+cat("HUMAN lnCVR:", round(coef(h4_h_rve), 4),
+    "[", round(h4_h_rve$ci.lb, 4), ",", round(h4_h_rve$ci.ub, 4), "]",
+    "p =", format.pval(h4_h_rve$pval, digits = 4), "\n")
+```
+
+## Subspecies variability (H4-R-VarRatMouse)
+
+Does change in standardized variability differ between rats and mice?
+
+```{r h4-r-subspecies}
+if ("Species" %in% names(rodent_cvr)) {
+  cat("Species distribution in CVR data:", table(rodent_cvr$Species), "\n\n")
+
+  h4_r_subspecies <- rma.mv(
+    yi = lnCVR, V = VCV_r_cvr,
+    mods = ~ Species,
+    random = ~ 1 | Study_Arm_ID/Test_Name/Outcome_ID,
+    data = rodent_cvr,
+    method = "REML", test = "t", dfs = "contain"
+  )
+  h4_r_subspecies_rve <- robust(h4_r_subspecies, cluster = rodent_cvr$Article_ID)
+
+  cat("H4-R-VarRatMouse\n")
+  cat("beta =", round(coef(h4_r_subspecies_rve)[2], 3),
+      "95% CI [", round(h4_r_subspecies_rve$ci.lb[2], 3), ",",
+      round(h4_r_subspecies_rve$ci.ub[2], 3), "]",
+      "p =", format.pval(h4_r_subspecies_rve$pval[2], digits = 3), "\n")
+}
+```
+
+# Publication bias
+
+Aggregating to article-level for these tests
+
+```{r pub-bias}
+agg_study <- function(dat) {
+  dat %>%
+    filter(!is.na(Hedges_g) & !is.na(sampling_variance) & sampling_variance > 0) %>%
+    group_by(Study_Arm_ID, Article_ID) %>%
+    summarise(
+      n_es = n(),
+      yi = weighted.mean(Hedges_g, w = 1/sampling_variance),
+      vi = mean(sampling_variance) / n(),
+      .groups = "drop"
+    ) %>%
+    mutate(sei = sqrt(vi))
+}
+
+r_study <- agg_study(rodent_data)
+h_study <- agg_study(human_data)
+
+cat("Aggregated: rodent k =", nrow(r_study), ", human k =", nrow(h_study), "\n")
+```
+
+```{r egger}
+r_uni <- rma(yi, vi, data = r_study, method = "REML")
+h_uni <- rma(yi, vi, data = h_study, method = "REML")
+
+egger_r <- regtest(r_uni, model = "lm", predictor = "sei")
+egger_h <- regtest(h_uni, model = "lm", predictor = "sei")
+
+cat("\nEgger's test:\n")
+cat("  Rodent: t =", round(egger_r$zval, 3), ", p =",
+    format.pval(egger_r$pval, digits = 4), "\n")
+cat("  Human: t =", round(egger_h$zval, 3), ", p =",
+    format.pval(egger_h$pval, digits = 4), "\n")
+```
+
+```{r trimfill}
+tf_r <- trimfill(r_uni, estimator = "R0")
+tf_h <- trimfill(h_uni, estimator = "R0")
+
+cat("\nTrim-and-fill:\n")
+cat("  Rodent: k0 =", tf_r$k0, ", adjusted g =", round(tf_r$b[1], 3), "\n")
+cat("  Human: k0 =", tf_h$k0, ", adjusted g =", round(tf_h$b[1], 3), "\n")
+```
+
+```{r pet-peese}
+# PET
+pet_r <- rma(yi, vi, mods = ~ sei, data = r_study, method = "REML")
+pet_h <- rma(yi, vi, mods = ~ sei, data = h_study, method = "REML")
+
+# PEESE
+peese_r <- rma(yi, vi, mods = ~ vi, data = r_study, method = "REML")
+peese_h <- rma(yi, vi, mods = ~ vi, data = h_study, method = "REML")
+
+cat("\nPET-PEESE:\n")
+cat("  Rodent PET intercept:", round(pet_r$b[1], 3),
+    ", p =", format.pval(pet_r$pval[1], digits = 4), "\n")
+cat("  Human PET intercept:", round(pet_h$b[1], 3),
+    ", p =", format.pval(pet_h$pval[1], digits = 4), "\n")
+```
+
+sessionInfo()
+```
