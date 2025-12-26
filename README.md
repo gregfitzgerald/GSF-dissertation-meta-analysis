@@ -5,6 +5,8 @@ Data and code for my dissertation meta-analysis comparing environmental enrichme
 ```
 CONSOLIDATED_ANALYSIS.Rmd    main analysis script
 CONSOLIDATED_ANALYSIS.html   knitted HTML of main analysis script
+Appendix_A_PRISMA_checklist_rodent	PRISMA checklist for rodent studies
+Appendix_B_PRISMA_checklist_human	PRISMA checklist for human studies
 
 data/
 	rodent_data_CLEANED_VIF_CORRECTED.csv   (k=71 studies, n=155 effects)
@@ -23,5 +25,6 @@ data/processed/
 ## License
 
 CC-BY 4.0
+
 
 
