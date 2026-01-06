@@ -25,11 +25,8 @@ GSF-dissertation-meta-analysis/
 └── PRISMA/
 ```
 
-| Dataset | Articles | Studies | Effect Sizes |
-|---------|----------|---------|--------------|
-| Rodent  | 47       | 71      | 155          |
-| Human   | 36       | 50      | 323          |
 
 ## Citation
 
-Fitzgerald, G. S. (2025). *Cross-species translation of environmental enrichment effects on cognition: A meta-analysis comparing rodent and human studies* [Doctoral dissertation]. University at Albany, SUNY.
+Fitzgerald, G. S. (2025). *A Cross-Species Meta-Analysis of Environmental Enrichment Effects on Cognition* [Doctoral dissertation]. State University of New York at Albany.
+
