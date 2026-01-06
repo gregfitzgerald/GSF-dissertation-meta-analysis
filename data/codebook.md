@@ -2,12 +2,12 @@
 
 ## Data Files
 
-- `rodent_data_CLEANED_VIF_CORRECTED.csv`
-- `human_data_CLEANED_VIF_CORRECTED.csv`
+- `rodent_data.csv` (115 columns)
+- `human_data.csv` (134 columns)
 
 ---
 
-## rodent_data_CLEANED_VIF_CORRECTED.csv
+## rodent_data.csv
 
 ### Study Identifiers
 
@@ -142,14 +142,12 @@
 
 | Variable | Description |
 |----------|-------------|
-| `Hedges_g` | Hedges' g effect size (uncorrected) |
-| `Hedges_g_corrected` | Hedges' g with small-sample correction |
-| `sampling_variance` | Raw sampling variance |
-| `sampling_variance_corrected` | Corrected sampling variance |
-| `vi_adjusted` | Variance adjusted for direction |
-| `Variance_Inflation_Factor` | VIF for shared control groups |
-| `VIF_multiarm` | VIF specifically for multi-arm adjustment |
+| `Hedges_g_corrected` | Hedges' g effect size (bias-corrected) |
+| `sampling_variance_corrected` | Sampling variance (corrected) |
 | `vi_adjusted_multiarm` | Final variance adjusted for multi-arm studies |
+| `VIF_multiarm` | Variance inflation factor for multi-arm adjustment |
+
+Note: Use `Hedges_g_corrected` and `vi_adjusted_multiarm` for analysis. These are the final effect sizes after all corrections.
 
 ### Multi-Arm Study Variables
 
@@ -206,14 +204,13 @@
 
 ---
 
-## human_data_CLEANED_VIF_CORRECTED.csv
+## human_data.csv
 
 ### Study Identifiers
 
 | Variable | Description |
 |----------|-------------|
 | `Article_ID` | Unique article identifier |
-| `Article_ID_From_File` | Original article ID from source file |
 | `Study_ID` | Study number within article |
 | `Study_ID_Unique` | Globally unique study identifier |
 | `Study_Arm_ID` | Unique study arm identifier for clustering |
@@ -221,7 +218,6 @@
 | `Test_ID` | Test number within study |
 | `Outcome_ID` | Outcome number within test |
 | `Arm_Number` | Arm number within multi-arm studies |
-| `Comparison_Column_Index` | Column index in original data file |
 
 ### Bibliographic Information
 
@@ -235,7 +231,6 @@
 | `Citation` | Full citation |
 | `Publication_Type` | Type of publication |
 | `Country_Of_Study` | Country where study was conducted |
-| `Original_File` | Source file name |
 
 
 ### Sample Characteristics
@@ -272,8 +267,6 @@
 | `Intervention_Duration` | Duration value |
 | `Intervention_Duration_Unit` | Duration unit (days, weeks, months) |
 | `Intervention_Duration_Days` | Duration standardized to days |
-| `Intervention_Duration_Legacy` | Original duration coding |
-| `Intervention_Duration_Unit_Legacy` | Original duration unit |
 | `Session_Duration_Value` | Minutes per session |
 | `Session_Duration_Units` | Session duration unit |
 | `Session_Frequency_Value_Per_Week` | Sessions per week |
@@ -285,8 +278,6 @@
 | `Intervention_to_Test_Interval_Days` | Days between intervention end and testing |
 | `Intervention_to_Test_Interval_Value` | Interval value |
 | `Intervention_to_Test_Interval_Units` | Interval unit |
-| `Intervention_to_Test_Interval_Value_Legacy` | Original interval value |
-| `Intervention_to_Test_Interval_Units_Legacy` | Original interval unit |
 
 ### Cognitive Training Details
 
@@ -384,16 +375,13 @@
 
 | Variable | Description |
 |----------|-------------|
-| `Hedges_g` | Hedges' g effect size (uncorrected) |
-| `Hedges_g_corrected` | Hedges' g with small-sample correction (Morris dppc2) |
-| `sampling_variance` | Raw sampling variance |
-| `sampling_variance_corrected` | Corrected sampling variance |
-| `vi_adjusted` | Variance adjusted for direction |
-| `Variance_Inflation_Factor` | VIF for shared control groups |
-| `VIF_multiarm` | VIF specifically for multi-arm adjustment |
+| `Hedges_g_corrected` | Hedges' g effect size (bias-corrected, Morris dppc2) |
+| `sampling_variance_corrected` | Sampling variance (corrected) |
 | `vi_adjusted_multiarm` | Final variance adjusted for multi-arm studies |
+| `VIF_multiarm` | Variance inflation factor for multi-arm adjustment |
 | `calculation_method` | Effect size calculation method used |
-| `Variance_Conversion_Notes` | Notes on variance conversions |
+
+Note: Use `Hedges_g_corrected` and `vi_adjusted_multiarm` for analysis. These are the final effect sizes after all corrections.
 
 ### Multi-Arm Study Variables
 
@@ -427,7 +415,6 @@
 | `Data_Source` | Where data was obtained (text, table, figure, supplement) |
 | `Data_Extraction_Method` | How data was extracted |
 | `Morris_Method_Required` | Whether Morris method was needed |
-| `Morris_Method_Required_Bool` | Boolean version of Morris flag |
 | `Control_Original_Variance_Type` | Original variance type for control |
 | `Intervention_Original_Variance_Type` | Original variance type for intervention |
 | `Pre_Registration_Status` | Whether study was pre-registered |

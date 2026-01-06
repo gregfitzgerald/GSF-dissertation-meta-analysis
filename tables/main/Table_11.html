@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Table 11</title>
+  <style>
+    body { font-family: "Times New Roman", Times, serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    .table-number { font-weight: bold; margin-bottom: 4px; }
+    .table-title { font-style: italic; margin-bottom: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 8px 12px; text-align: left; vertical-align: top; }
+    thead tr { border-top: 2px solid black; border-bottom: 1px solid black; }
+    tbody tr:last-child { border-bottom: 2px solid black; }
+    th { font-weight: normal; }
+    .note { font-size: 0.9em; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <p class="table-number">Table 11</p>
+  <p class="table-title">Sensitivity Analysis Summary for H1a Overall Effects</p>
+  
+  <table>
+<thead><tr><th>Analysis</th><th>Rodent g</th><th>Rodent % Change</th><th>Human g</th><th>Human % Change</th><th>Conclusion</th></tr></thead>
+<tbody>
+<tr><td>Main analysis</td><td>0.435 [0.25, 0.62]</td><td>--</td><td>0.164 [0.11, 0.22]</td><td>--</td><td>Reference</td></tr>
+<tr><td>VCV r = 0.5</td><td>0.477 [0.28, 0.68]</td><td>+9.7%</td><td>0.167 [0.11, 0.23]</td><td>+1.8%</td><td>Robust</td></tr>
+<tr><td>VCV r = 0.9</td><td>0.470 [0.27, 0.67]</td><td>+8.0%</td><td>0.170 [0.11, 0.23]</td><td>+3.7%</td><td>Robust</td></tr>
+<tr><td>Exclude flagged studies</td><td>0.622 [0.32, 0.92]</td><td>+43.0%</td><td>--</td><td>--</td><td>Robust</td></tr>
+<tr><td>Exclude high ROB</td><td>0.473 [0.27, 0.67]</td><td>+8.7%</td><td>--</td><td>--</td><td>Robust</td></tr>
+<tr><td>Exclude |g| &gt; 2</td><td>0.398 [0.23, 0.56]</td><td>-8.5%</td><td>--</td><td>--</td><td>Robust</td></tr>
+<tr><td>LOO max change</td><td>--</td><td>+13.8%</td><td>--</td><td>+7.9%</td><td>Robust</td></tr>
+</tbody>
+  </table>
+  
+  <p class="note">Note. VCV = variance-covariance correlation assumption; ROB = risk of bias; LOO = leave-one-out analysis.</p>
+</body>
+</html>

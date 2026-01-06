@@ -1,30 +1,35 @@
-Data and code for my dissertation meta-analysis comparing environmental enrichment effects on cognition in rodents and humans.
+# Environmental Enrichment Meta-Analysis
 
-## Files
-
-```
-CONSOLIDATED_ANALYSIS.Rmd    main analysis script
-CONSOLIDATED_ANALYSIS.html   knitted HTML of main analysis script
-Appendix_A_PRISMA_checklist_rodent	PRISMA checklist for rodent studies
-Appendix_B_PRISMA_checklist_human	PRISMA checklist for human studies
-
-data/
-	rodent_data_CLEANED_VIF_CORRECTED.csv   (k=71 studies, n=155 effects)
-	human_data_CLEANED_VIF_CORRECTED.csv    (k=50 studies, n=323 effects)
-	codebook.md
-
-data/processed/
-	rodent_main.rds                       preprocessed rodent data
-	human_main.rds                        preprocessed human data
-	VCV_rodent.rds                        variance-covariance matrix
-	VCV_human.rds                         variance-covariance matrix
-
+Data and code for the dissertation: *Cross-Species Translation of Environmental Enrichment Effects on Cognition: A Meta-Analysis Comparing Rodent and Human Studies*
 
 ```
+GSF-dissertation-meta-analysis/
+├── protocol/
+│   └── approved_protocol_2023.pdf
+├── search/
+│   ├── queries/
+│   └── results/
+│       ├── rodent/
+│       └── human/
+├── data/
+│   ├── raw/
+│   ├── processed/
+│   └── codebook.md
+├── scripts/
+├── figures/
+│   ├── main/           (Figures 1-16)
+│   └── supplementary/  (Figures S1-S16)
+├── tables/
+│   ├── main/           (Tables 1-14)
+│   └── supplementary/  (Tables S1-S8)
+└── PRISMA/
+```
 
-## License
+| Dataset | Articles | Studies | Effect Sizes |
+|---------|----------|---------|--------------|
+| Rodent  | 47       | 71      | 155          |
+| Human   | 36       | 50      | 323          |
 
-CC-BY 4.0
+## Citation
 
-
-
+Fitzgerald, G. S. (2025). *Cross-species translation of environmental enrichment effects on cognition: A meta-analysis comparing rodent and human studies* [Doctoral dissertation]. University at Albany, SUNY.

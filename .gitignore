@@ -1,0 +1,16 @@
+# Working files
+_working_drafts/
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# R session files
+.Rhistory
+.RData
+.Rproj.user/
+
+# Temporary Office files
+~$*.docx
+~$*.xlsx

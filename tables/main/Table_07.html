@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Table 7</title>
+  <style>
+    body { font-family: "Times New Roman", Times, serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    .table-number { font-weight: bold; margin-bottom: 4px; }
+    .table-title { font-style: italic; margin-bottom: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 8px 12px; text-align: left; vertical-align: top; }
+    thead tr { border-top: 2px solid black; border-bottom: 1px solid black; }
+    tbody tr:last-child { border-bottom: 2px solid black; }
+    th { font-weight: normal; }
+    .note { font-size: 0.9em; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <p class="table-number">Table 7</p>
+  <p class="table-title">H1 Family Results: Dose-Response Relationships</p>
+  
+  <table>
+<thead><tr><th>Test</th><th>Description</th><th>Estimate [95% CI]</th><th>p (raw)</th><th>p (Holm)</th></tr></thead>
+<tbody>
+<tr><td>H1-R-Overall</td><td>Rodent overall efficacy</td><td>g = 0.435 [0.248, 0.621]</td><td>&lt; .001</td><td>&lt; .001*</td></tr>
+<tr><td>H1-H-Overall</td><td>Human overall efficacy</td><td>g = 0.164 [0.107, 0.222]</td><td>&lt; .001</td><td>&lt; .001*</td></tr>
+<tr><td>H1-CS-Gap</td><td>Cross-species comparison</td><td>Ratio = 2.65x</td><td>.006</td><td>.006*</td></tr>
+<tr><td>H1-R-Dose</td><td>RLS dose-response (rodent)</td><td>β = 0.045 [-0.077, 0.166]</td><td>.461</td><td>Uncorrected</td></tr>
+<tr><td>H1-H-Dose</td><td>Duration dose-response (human)</td><td>β = -0.001 [-0.002, -0.0002]</td><td>.019</td><td>Uncorrected</td></tr>
+<tr><td>H1-CS-DoseSlope</td><td>Species x Dose interaction</td><td>β = 0.090 [-0.121, 0.300]</td><td>.400</td><td>Uncorrected</td></tr>
+<tr><td>H1-R-Baseline</td><td>Baseline main effect</td><td>β = -0.076 [-0.208, 0.056]</td><td>.252</td><td>Uncorrected</td></tr>
+<tr><td>H1-R-BaseXDose</td><td>Baseline x Dose interaction</td><td>β = -0.011 [-0.101, 0.079]</td><td>.808</td><td>Uncorrected</td></tr>
+<tr><td>H1-R-DurXDose</td><td>Duration x Dose interaction</td><td>β = 0.002 [-0.0001, 0.0034]</td><td>.068</td><td>Uncorrected</td></tr>
+<tr><td>H1-R-SexXDose</td><td>Sex x Dose interaction</td><td>β = -0.016 [-0.237, 0.206]</td><td>.886</td><td>Uncorrected</td></tr>
+<tr><td>H1-R-RatMouseXDose</td><td>Rat vs. Mouse x Dose interaction</td><td>β = 0.043 [-0.204, 0.290]</td><td>.726</td><td>Uncorrected</td></tr>
+</tbody>
+  </table>
+  
+  <p class="note">Note. g = Hedges&#x27; g; β = regression coefficient; CI = confidence interval. Primary tests (H1-R-Overall, H1-H-Overall, H1-CS-Gap) received Holm-Bonferroni correction; exploratory moderator analyses evaluated at uncorrected α = .05. * = survives Holm correction.</p>
+</body>
+</html>

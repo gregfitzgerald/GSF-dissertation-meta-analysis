@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Table 3</title>
+  <style>
+    body { font-family: "Times New Roman", Times, serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    .table-number { font-weight: bold; margin-bottom: 4px; }
+    .table-title { font-style: italic; margin-bottom: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 8px 12px; text-align: left; vertical-align: top; }
+    thead tr { border-top: 2px solid black; border-bottom: 1px solid black; }
+    tbody tr:last-child { border-bottom: 2px solid black; }
+    th { font-weight: normal; }
+    .note { font-size: 0.9em; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <p class="table-number">Table 3</p>
+  <p class="table-title">Confirmatory Hypothesis Testing Structure</p>
+  
+  <table>
+<thead><tr><th>Family</th><th>Hypothesis</th><th>Test Description</th><th>Species</th><th>Test Type</th><th>Correction Pool</th></tr></thead>
+<tbody>
+<tr><td>H1</td><td>H1-R-Overall</td><td>Rodent overall efficacy</td><td>Rodent</td><td>Primary</td><td>H1 (3 tests)</td></tr>
+<tr><td>H1</td><td>H1-H-Overall</td><td>Human overall efficacy</td><td>Human</td><td>Primary</td><td>H1 (3 tests)</td></tr>
+<tr><td>H1</td><td>H1-CS-Gap</td><td>Cross-species effect size comparison</td><td>Cross-species</td><td>Primary</td><td>H1 (3 tests)</td></tr>
+<tr><td>H1</td><td>H1-R-Dose</td><td>Rodent RLS dose-response slope</td><td>Rodent</td><td>Exploratory</td><td>Uncorrected</td></tr>
+<tr><td>H1</td><td>H1-H-Dose</td><td>Human duration dose-response slope</td><td>Human</td><td>Exploratory</td><td>Uncorrected</td></tr>
+<tr><td>H1</td><td>H1-CS-DoseSlope</td><td>Species x dose slope comparison</td><td>Cross-species</td><td>Exploratory</td><td>Uncorrected</td></tr>
+<tr><td>H1</td><td>H1-R-Baseline</td><td>Rodent baseline moderation (main effect)</td><td>Rodent</td><td>Exploratory</td><td>Uncorrected</td></tr>
+<tr><td>H1</td><td>H1-R-BaseXDose</td><td>Rodent baseline x dose interaction</td><td>Rodent</td><td>Exploratory</td><td>Uncorrected</td></tr>
+<tr><td>H1</td><td>H1-R-DurXDose</td><td>Rodent duration x dose interaction</td><td>Rodent</td><td>Exploratory</td><td>Uncorrected</td></tr>
+<tr><td>H1</td><td>H1-R-SexXDose</td><td>Rodent sex x dose interaction</td><td>Rodent</td><td>Exploratory</td><td>Uncorrected</td></tr>
+<tr><td>H1</td><td>H1-R-RatMouseXDose</td><td>Rodent species (rat vs. mouse) x dose interaction</td><td>Rodent</td><td>Exploratory</td><td>Uncorrected</td></tr>
+<tr><td>H2</td><td>H2-R-Components</td><td>Rodent RLS component effects (omnibus)</td><td>Rodent</td><td>Primary</td><td>H2 (2 tests)</td></tr>
+<tr><td>H2</td><td>H2-H-Type</td><td>Human intervention type comparison</td><td>Human</td><td>Primary</td><td>H2 (2 tests)</td></tr>
+<tr><td>H2</td><td>H2-H-Transfer</td><td>Human transfer distance</td><td>Human</td><td>Exploratory</td><td>Uncorrected</td></tr>
+<tr><td>H3</td><td>H3-R-Domains</td><td>Rodent domain comparison</td><td>Rodent</td><td>Primary</td><td>H3 (2 tests)</td></tr>
+<tr><td>H3</td><td>H3-H-Domains</td><td>Human domain comparison</td><td>Human</td><td>Primary</td><td>H3 (2 tests)</td></tr>
+<tr><td>H4</td><td>H4-R-Var</td><td>Rodent variability (lnCVR)</td><td>Rodent</td><td>Primary</td><td>H4 (3 tests)</td></tr>
+<tr><td>H4</td><td>H4-H-Var</td><td>Human variability (lnCVR)</td><td>Human</td><td>Primary</td><td>H4 (3 tests)</td></tr>
+<tr><td>H4</td><td>H4-CS-VarGap</td><td>Cross-species variability comparison</td><td>Cross-species</td><td>Primary</td><td>H4 (3 tests)</td></tr>
+<tr><td>H4</td><td>H4-R-VarSex</td><td>Rodent sex x variability</td><td>Rodent</td><td>Exploratory</td><td>Uncorrected</td></tr>
+<tr><td>H4</td><td>H4-R-VarRatMouse</td><td>Rodent species x variability</td><td>Rodent</td><td>Exploratory</td><td>Uncorrected</td></tr>
+</tbody>
+  </table>
+  
+  <p class="note">Note. Primary tests receive Holm-Bonferroni correction within their family; exploratory moderator analyses are evaluated at uncorrected α = .05 consistent with standard meta-analytic practice.</p>
+</body>
+</html>

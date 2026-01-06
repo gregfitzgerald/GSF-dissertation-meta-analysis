@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Table 10</title>
+  <style>
+    body { font-family: "Times New Roman", Times, serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    .table-number { font-weight: bold; margin-bottom: 4px; }
+    .table-title { font-style: italic; margin-bottom: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 8px 12px; text-align: left; vertical-align: top; }
+    thead tr { border-top: 2px solid black; border-bottom: 1px solid black; }
+    tbody tr:last-child { border-bottom: 2px solid black; }
+    th { font-weight: normal; }
+    .note { font-size: 0.9em; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <p class="table-number">Table 10</p>
+  <p class="table-title">H4 Family Results: Response Variability</p>
+  
+  <table>
+<thead><tr><th>Test</th><th>Description</th><th>lnCVR [95% CI]</th><th>p (raw)</th><th>p (Holm)</th></tr></thead>
+<tbody>
+<tr><td>H4-R-Var</td><td>Rodent variability</td><td>-0.140 [-0.262, -0.018]</td><td>.026</td><td>.103</td></tr>
+<tr><td>H4-H-Var</td><td>Human variability</td><td>-0.064 [-0.127, -0.001]</td><td>.048</td><td>.144</td></tr>
+<tr><td>H4-CS-VarGap</td><td>Cross-species comparison</td><td>β = -0.080 [-0.214, 0.054]</td><td>.238</td><td>.476</td></tr>
+<tr><td>H4-R-VarSex</td><td>Sex differences (rodent)</td><td>β = +0.107 [-0.143, 0.357]</td><td>.390</td><td>.476</td></tr>
+<tr><td>H4-R-VarRatMouse</td><td>Mouse vs. Rat</td><td>β = +0.138 [-0.130, 0.406]</td><td>.306</td><td>.476</td></tr>
+</tbody>
+  </table>
+  
+  <p class="note">Note. lnCVR = log coefficient of variation ratio. Negative values indicate reduced variability (homogenization) in the intervention group relative to control.</p>
+</body>
+</html>
