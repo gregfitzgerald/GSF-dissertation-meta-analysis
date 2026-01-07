@@ -1,6 +1,4 @@
-# Environmental Enrichment Meta-Analysis
-
-Data and code for the dissertation: *Cross-Species Translation of Environmental Enrichment Effects on Cognition: A Meta-Analysis Comparing Rodent and Human Studies*
+Data and code for the dissertation: *A Cross-Species Meta-Analysis of Environmental Enrichment Effects on Cognition*
 
 ```
 GSF-dissertation-meta-analysis/
@@ -28,5 +26,6 @@ GSF-dissertation-meta-analysis/
 
 ## Citation
 
-Fitzgerald, G. S. (2025). *A Cross-Species Meta-Analysis of Environmental Enrichment Effects on Cognition* [Doctoral dissertation]. State University of New York at Albany.
+Fitzgerald, G. S. (2026). *A Cross-Species Meta-Analysis of Environmental Enrichment Effects on Cognition* [Doctoral dissertation]. State University of New York at Albany.
+
 
