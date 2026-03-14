@@ -735,3 +735,63 @@ cat("  Human PET intercept:", round(pet_h$b[1], 3),
 
 sessionInfo()
 ```
+
+---
+
+---
+
+# Leave-One-Lab-Out Sensitivity Analysis
+
+Some labs contributed multiple papers. To check whether any single lab was driving the results, I re-ran the main models with each lab's studies removed.
+
+Lab groups with multiple articles:
+- Bouet/Léger (Caen group) — rodent
+- Lambert/Harburger (Frick lab) — rodent  
+- Emch/Ripp (München) — human
+
+```{r lolo}
+# assign lab groups
+rodent_data$lab_group <- ifelse(rodent_data$Last_Name %in% c("Bouet", "Leger", "Léger"), "Caen group",
+                         ifelse(rodent_data$Last_Name %in% c("Lambert", "Harburger"), "Frick lab",
+                                rodent_data$Last_Name))
+
+human_data$lab_group <- ifelse(human_data$Last_Name %in% c("Emch", "Ripp"), "TU München",
+                               human_data$Last_Name)
+
+# baseline estimates
+baseline_r <- coef(robust(h1_r_overall, cluster = rodent_data$Article_ID))[1]
+baseline_h <- coef(robust(h1_h_overall, cluster = human_data$Article_ID))[1]
+
+lolo_one <- function(data, VCV, baseline, lab) {
+  keep <- data$lab_group != lab
+  d    <- data[keep, ]
+  V    <- VCV[keep, keep]
+  fit  <- rma.mv(Hedges_g, V, random = ~ 1 | Study_Arm_ID/Test_ID/Outcome_ID,
+                 data = d, method = "REML", test = "t", dfs = "contain")
+  g    <- coef(robust(fit, cluster = d$Article_ID))[1]
+  data.frame(lab = lab, g = round(g, 3),
+             pct_change = round((g - baseline) / baseline * 100, 1))
+}
+
+# rodent labs with multiple studies
+r_labs <- names(which(table(rodent_data$lab_group) >= 2))
+rodent_lolo <- do.call(rbind, lapply(r_labs, function(l)
+  lolo_one(rodent_data, VCV_rodent, baseline_r, l)))
+
+# human labs with multiple studies
+h_labs <- names(which(table(human_data$lab_group) >= 2))
+human_lolo <- do.call(rbind, lapply(h_labs, function(l)
+  lolo_one(human_data, VCV_human, baseline_h, l)))
+
+cat("Rodent baseline g =", round(baseline_r, 3), "\n")
+print(rodent_lolo)
+cat("\nHuman baseline g =", round(baseline_h, 3), "\n")
+print(human_lolo)
+
+# save
+write.csv(rodent_lolo, "data/processed/lolo_rodent.csv", row.names = FALSE)
+write.csv(human_lolo,  "data/processed/lolo_human.csv",  row.names = FALSE)
+```
+
+sessionInfo()
+```
