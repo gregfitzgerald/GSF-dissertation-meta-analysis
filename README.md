@@ -24,7 +24,7 @@ GSF-dissertation-meta-analysis/
 │   │   └── lolo_human.csv
 │   └── codebook.md
 ├── scripts/
-│   ├── CONSOLIDATED_ANALYSIS.Rmd     (full analysis pipeline incl. LOLO)
+│   ├── CONSOLIDATED_ANALYSIS.Rmd     (full analysis pipeline)
 │   └── CONSOLIDATED_ANALYSIS.html    (rendered output)
 ├── figures/
 │   ├── main/                         (Figures 1-16)
